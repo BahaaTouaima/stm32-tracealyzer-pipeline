@@ -2,3 +2,4 @@ firmware/build/gcc/output/
 *.o
 *.d
 build/
+ci/pipeline.log
