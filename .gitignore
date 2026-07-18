@@ -3,3 +3,5 @@ firmware/build/gcc/output/
 *.d
 build/
 ci/pipeline.log
+ci/cppcheck-results.txt
+cppcheck-results.txt
