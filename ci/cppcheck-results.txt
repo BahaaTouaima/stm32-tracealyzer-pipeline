@@ -1,0 +1,9 @@
+firmware/main.c:234:23: style: The scope of the variable 'ulSetToNonZeroInDebuggerToContinue' can be reduced. [variableScope]
+    volatile uint32_t ulSetToNonZeroInDebuggerToContinue = 0;
+                      ^
+firmware/main.c:337:21: style: Parameter 'pcString' can be declared as pointer to const [constParameterPointer]
+             char * pcString,
+                    ^
+firmware/build/gcc/startup_gcc.c:100:75: style: Parameter 'pulFaultStackAddress' can be declared as pointer to const [constParameterPointer]
+static __attribute__( ( used ) ) void prvGetRegistersFromStack( uint32_t *pulFaultStackAddress )
+                                                                          ^

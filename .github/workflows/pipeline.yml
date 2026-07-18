@@ -15,3 +15,24 @@ jobs:
         run: |
           echo "Pipeline run triggered at $(date '+%Y-%m-%d %H:%M:%S')"
           echo "Commit: ${{ github.sha }}"
+
+
+
+
+      - name: Install cppcheck
+        run: sudo apt-get update && sudo apt-get install -y cppcheck
+
+      - name: Run cppcheck
+        run: |
+          cppcheck --enable=warning,style,performance \
+            --suppress=missingIncludeSystem \
+            -I firmware/config -I firmware/CMSIS \
+            firmware/main.c firmware/main_blinky.c firmware/build/gcc/startup_gcc.c \
+            firmware/build/gcc/RegTest.c firmware/build/gcc/timer_handlers_stub.c \
+            --output-file=cppcheck-results.txt
+
+      - name: Upload cppcheck results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cppcheck-results
+          path: cppcheck-results.txt     
