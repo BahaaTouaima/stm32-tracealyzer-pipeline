@@ -2,7 +2,25 @@ OUTPUT_DIR := ./output
 IMAGE := $(OUTPUT_DIR)/RTOSDemo.out
 
 # The directory that contains the /source and /demo sub directories.
-FREERTOS_ROOT = /home/bahaa/FreeRTOS/FreeRTOS
+
+FREERTOS_ROOT = ../../FreeRTOS-Kernel
+CFLAGS += -I../../config
+CFLAGS += -I../../CMSIS
+
+
+TRACE_RECORDER_DIR = ../../TraceRecorder
+CFLAGS += -I$(TRACE_RECORDER_DIR)/include
+CFLAGS += -I$(TRACE_RECORDER_DIR)/config
+CFLAGS += -I$(TRACE_RECORDER_DIR)/kernelports/FreeRTOS/include
+CFLAGS += -I$(TRACE_RECORDER_DIR)/kernelports/FreeRTOS/config
+CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/File/include
+CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/File/config
+VPATH += $(TRACE_RECORDER_DIR)
+VPATH += $(TRACE_RECORDER_DIR)/kernelports/FreeRTOS
+VPATH += $(TRACE_RECORDER_DIR)/streamports/File
+
+
+
 
 CC = arm-none-eabi-gcc
 LD = arm-none-eabi-gcc
@@ -48,91 +66,40 @@ SOURCE_FILES += $(KERNEL_DIR)/portable/GCC/ARM_CM3/port.c
 # Common demo files for the "full" build, as opposed to the "blinky" build -
 # these files are build by all the FreeRTOS kernel demos.
 #
-DEMO_ROOT = $(FREERTOS_ROOT)/Demo
-COMMON_DEMO_FILES = $(DEMO_ROOT)/Common/Minimal
-INCLUDE_DIRS += -I$(DEMO_ROOT)/Common/include
-VPATH += $(COMMON_DEMO_FILES)
-SOURCE_FILES += (COMMON_DEMO_FILES)/AbortDelay.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/BlockQ.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/blocktim.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/countsem.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/death.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/dynamic.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/EventGroupsDemo.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/GenQTest.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/integer.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/IntQueue.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/IntQueueTimer.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/IntSemTest.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/MessageBufferAMP.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/MessageBufferDemo.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/PollQ.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/QPeek.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/QueueOverwrite.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/QueueSet.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/QueueSetPolling.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/recmutex.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/semtest.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/StaticAllocation.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/StreamBufferDemo.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/StreamBufferInterrupt.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/TaskNotify.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/TaskNotifyArray.c
-SOURCE_FILES += (COMMON_DEMO_FILES)/TimerDemo.c
+
+
+
+
 
 #
 # Application entry point.  main_blinky is self contained.  main_full builds
 # the above common demo (and test) files too.
 #
-DEMO_PROJECT = $(DEMO_ROOT)/CORTEX_MPS2_QEMU_IAR_GCC
+DEMO_PROJECT = ../..
 VPATH += $(DEMO_PROJECT)
 INCLUDE_DIRS += -I$(DEMO_PROJECT) -I$(DEMO_PROJECT)/CMSIS
 SOURCE_FILES += (DEMO_PROJECT)/main.c
 SOURCE_FILES += (DEMO_PROJECT)/main_blinky.c
-SOURCE_FILES += (DEMO_PROJECT)/main_full.c
+
 SOURCE_FILES += ./startup_gcc.c
 SOURCE_FILES += ./RegTest.c
+SOURCE_FILES += ./timer_handlers_stub.c
 # Lightweight print formatting to use in place of the heavier GCC equivalent.
 SOURCE_FILES += ./printf-stdarg.c
 
-# Percepio TraceRecorder (FreeRTOS-Plus-Trace)
-TRACERECORDER_DIR = $(DEMO_ROOT)/../../FreeRTOS-Plus/Source/FreeRTOS-Plus-Trace
-TRACERECORDER_CFG_DIR = $(DEMO_PROJECT)/TraceRecorderConfig
-VPATH += $(TRACERECORDER_DIR)
-VPATH += $(TRACERECORDER_DIR)/kernelports/FreeRTOS
-VPATH += $(TRACERECORDER_DIR)/streamports/RingBuffer
-INCLUDE_DIRS += -I$(TRACERECORDER_CFG_DIR)
-INCLUDE_DIRS += -I$(TRACERECORDER_DIR)/include
-INCLUDE_DIRS += -I$(TRACERECORDER_DIR)/kernelports/FreeRTOS/include
-INCLUDE_DIRS += -I$(TRACERECORDER_DIR)/streamports/RingBuffer/include
-SOURCE_FILES +=	(TRACERECORDER_DIR)/kernelports/FreeRTOS/trcKernelPort.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/streamports/RingBuffer/trcStreamPort.c
-SOURCE_FILES += (TRACERECORDER_DIR)/trcAssert.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcCounter.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcDependency.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcDiagnostics.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcEntryTable.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcError.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcEvent.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcEventBuffer.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcExtension.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcHardwarePort.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcHeap.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcInternalEventBuffer.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcInterval.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcISR.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcMultiCoreEventBuffer.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcObject.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcPrint.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcRunnable.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcSnapshotRecorder.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcStackMonitor.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcStateMachine.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcStaticBuffer.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcStreamingRecorder.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcString.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcTask.c
-SOURCE_FILES +=	(TRACERECORDER_DIR)/trcTimestamp.c
+
+
+
+
+
+
+
+
+
+SOURCE_FILES += $(wildcard $(TRACE_RECORDER_DIR)/*.c)
+SOURCE_FILES += $(TRACE_RECORDER_DIR)/kernelports/FreeRTOS/trcKernelPort.c
+SOURCE_FILES += $(TRACE_RECORDER_DIR)/streamports/File/trcStreamPort.c
+
 
 #Create a list of object files with the desired output directory path.
 OBJS = $(SOURCE_FILES:%.c=%.o)
