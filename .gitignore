@@ -5,3 +5,5 @@ build/
 ci/pipeline.log
 ci/cppcheck-results.txt
 cppcheck-results.txt
+ci/trace.bin
+ci/qemu_output.log

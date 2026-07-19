@@ -13,11 +13,11 @@ CFLAGS += -I$(TRACE_RECORDER_DIR)/include
 CFLAGS += -I$(TRACE_RECORDER_DIR)/config
 CFLAGS += -I$(TRACE_RECORDER_DIR)/kernelports/FreeRTOS/include
 CFLAGS += -I$(TRACE_RECORDER_DIR)/kernelports/FreeRTOS/config
-CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/File/include
-CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/File/config
+CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/RingBuffer/include
+CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/RingBuffer/config
 VPATH += $(TRACE_RECORDER_DIR)
 VPATH += $(TRACE_RECORDER_DIR)/kernelports/FreeRTOS
-VPATH += $(TRACE_RECORDER_DIR)/streamports/File
+VPATH += $(TRACE_RECORDER_DIR)/streamports/RingBuffer
 
 
 
@@ -98,7 +98,7 @@ SOURCE_FILES += ./printf-stdarg.c
 
 SOURCE_FILES += $(wildcard $(TRACE_RECORDER_DIR)/*.c)
 SOURCE_FILES += $(TRACE_RECORDER_DIR)/kernelports/FreeRTOS/trcKernelPort.c
-SOURCE_FILES += $(TRACE_RECORDER_DIR)/streamports/File/trcStreamPort.c
+SOURCE_FILES += $(TRACE_RECORDER_DIR)/streamports/RingBuffer/trcStreamPort.c
 
 
 #Create a list of object files with the desired output directory path.
