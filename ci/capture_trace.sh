@@ -4,11 +4,12 @@
 # accumulate in memory, then uses GDB to dump that memory into a real
 # file on the host machine.
 
-OUTPUT_DIR=~/stm32-tracealyzer-pipeline/firmware/build/gcc/output
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+OUTPUT_DIR="$PROJECT_ROOT/firmware/build/gcc/output"
 BINARY=RTOSDemo.out
-TRACE_FILE=~/stm32-tracealyzer-pipeline/ci/trace.bin
-QEMU_LOG=~/stm32-tracealyzer-pipeline/ci/qemu_output.log
-
+TRACE_FILE="$PROJECT_ROOT/ci/trace.bin"
+QEMU_LOG="$PROJECT_ROOT/ci/qemu_output.log"
 
 
 
