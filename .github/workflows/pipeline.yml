@@ -21,6 +21,24 @@ jobs:
           cmake ..
           cmake --build .
 
+
+
+
+      - name: Install QEMU and GDB
+        run: sudo apt-get update && sudo apt-get install -y qemu-system-arm gdb-multiarch
+      - name: Capture and parse trace
+        run: |
+          bash ci/capture_trace.sh
+          python3 ci/parse_events.py ci/trace.bin ci/trace_events.csv
+      - name: Upload trace results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trace-events
+          path: ci/trace_events.csv
+
+
+
+
       - name: Log pipeline run
         run: |
           echo "Pipeline run triggered at $(date '+%Y-%m-%d %H:%M:%S')"
