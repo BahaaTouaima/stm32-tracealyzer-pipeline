@@ -1,7 +1,7 @@
 firmware/build/gcc/output/
 *.o
 *.d
-build/
+/build/
 ci/pipeline.log
 ci/cppcheck-results.txt
 cppcheck-results.txt
