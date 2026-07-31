@@ -9,22 +9,22 @@ BINARY=RTOSDemo.out
 TRACE_FILE=~/stm32-tracealyzer-pipeline/ci/trace.bin
 QEMU_LOG=~/stm32-tracealyzer-pipeline/ci/qemu_output.log
 
-START_ADDR=0x20019c60
-END_ADDR=0x2001d258
+
+
 
 cd "$OUTPUT_DIR" || exit 1
 
 echo "[1] Starting QEMU in the background..."
-qemu-system-arm -M mps2-an385 -kernel $BINARY -nographic -monitor none -s > "$QEMU_LOG" 2>&1 &
+qemu-system-arm -M mps2-an385 -kernel $BINARY -nographic -monitor none -s  > "$QEMU_LOG" 2>&1 &
 QEMU_PID=$!
 
-echo "[2] Letting firmware run for 10 seconds..."
-sleep 10
+echo "[2] waiting for gdb to connect..."
+sleep 5
 
-echo "[3] Connecting GDB and dumping memory..."
+echo "[3] running until task created, then dumping memory..."
 gdb-multiarch -batch \
   -ex "target remote :1234" \
-  -ex "dump binary memory $TRACE_FILE $START_ADDR $END_ADDR" \
+-ex "dump binary memory $TRACE_FILE &pxStreamPortData->xRingBuffer.xHeaderBuffer (&pxStreamPortData->xRingBuffer.xEventBuffer + 1)" \
   -ex "detach" \
   $BINARY
 

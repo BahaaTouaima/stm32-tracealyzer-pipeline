@@ -7,3 +7,4 @@ ci/cppcheck-results.txt
 cppcheck-results.txt
 ci/trace.bin
 ci/qemu_output.log
+ci/trace_events.csv
