@@ -54,10 +54,12 @@ TASK_STATE_EVENTS = {
 
 
 
-# Fixed, absolute path -- works no matter which folder you run the script from.
-KERNEL_PORT_HEADER = os.path.expanduser(
-    "~/stm32-tracealyzer-pipeline/firmware/TraceRecorder/kernelports/FreeRTOS/include/trcKernelPort.h"
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
+KERNEL_PORT_HEADER = os.path.join(
+    PROJECT_ROOT, "firmware", "TraceRecorder", "kernelports", "FreeRTOS", "include", "trcKernelPort.h"
 )
+
 
 def load_event_names(header_path):
     names = {}
