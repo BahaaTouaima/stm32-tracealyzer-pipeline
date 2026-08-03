@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(stm32_tracealyzer_pipeline NONE)
+project(stm32_tracealyzer_pipeline NONE) #none help to not use the default compiler
 #this wraps the existing Makefile-based firmware build.
 #its lets Cmake trigger 'make' inside firmware/build/gcc
 #so the whole project can be built with 'cmake --build'

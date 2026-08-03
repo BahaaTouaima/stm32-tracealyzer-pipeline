@@ -4,40 +4,48 @@ import csv
 import re
 import os
 
-HEADER_SIZE = 2808  # confirmed via GDB: puiBuffer address minus header address
-OBJ_NAME_EVENT = 0x03  # PSF_EVENT_OBJ_NAME -- kept for reference, but NOT used to resolve
-                        # names in this streamport config: TRC_SEND_NAME_ONLY_ON_DELETE=1
-                        # means names are never sent as events at creation time.
-                        # Instead, names live in a separate, persistent Entry Table --
-                        # see load_entry_table_names() below.
+# offset ou commencent les vrais events dans trace.bin (trouve avec gdb)
+# avant ça: header PSF + timestamp info + table des noms
+HEADER_SIZE = 2808
+
+
+
+# freq du timer + diviseur, pour convertir le timestamp en ms
 CPU_CLOCK_HZ = 25000000
 HWTC_DIVISOR = 4
 
-# Entry table layout (confirmed via GDB against the running firmware):
-ENTRY_TABLE_FILE_OFFSET = 72     # where the entry table starts in trace.bin
-ENTRY_SIZE = 48                  # bytes per entry
-ENTRY_COUNT = 56                 # number of slots (uxSlots)
-SYMBOL_OFFSET_IN_ENTRY = 20      # where szSymbol starts, within one entry
-SYMBOL_SIZE = 28                 # length of szSymbol
+# position + taille de la table des noms de taches dans trace.bin
+ENTRY_TABLE_FILE_OFFSET = 72
+ENTRY_SIZE = 48          # taille d'une entree
+ENTRY_COUNT = 56         # nombre d'entrees dans la table
+SYMBOL_OFFSET_IN_ENTRY = 20   # ou commence le nom dans une entree
+SYMBOL_SIZE = 28              # taille max du nom
+
 
 def load_entry_table_names(data):
-    """
-    Reads the Entry Table directly from the trace file and returns a
-    dict of {address_handle: name}. This is needed because this specific
-    streamport (RingBuffer) never sends OBJ_NAME events at task creation --
-    names are stored once, persistently, in this table instead.
-    """
+    # lit la entry table et retourne un dict {handle: nom}
+
     names = {}
     for i in range(ENTRY_COUNT):
         entry_start = ENTRY_TABLE_FILE_OFFSET + (i * ENTRY_SIZE)
-        # first 4 bytes of each entry = pvAddress (the handle)
+
+        # 4 premiers octets = adresse handle de la tache
         handle = struct.unpack_from("<I", data, entry_start)[0]
+
         symbol_start = entry_start + SYMBOL_OFFSET_IN_ENTRY
         raw_symbol = data[symbol_start: symbol_start + SYMBOL_SIZE]
+
+        # coupe au premier octet nul (fin de string en C), puis decode en texte
         name = raw_symbol.split(b"\x00")[0].decode(errors="replace")
+
+        # ignore les entrees vides
         if handle != 0 and name:
             names[handle] = name
     return names
+
+
+
+
 
 TASK_STATE_EVENTS = {
     0x30: "READY",       # PSF_EVENT_TASK_READY
@@ -49,19 +57,20 @@ TASK_STATE_EVENTS = {
 }
 
 
-
-
-
-
+# chemin vers trcKernelPort.h, calcule a partir du script lui meme
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
 KERNEL_PORT_HEADER = os.path.join(
-    PROJECT_ROOT, "firmware", "TraceRecorder", "kernelports", "FreeRTOS", "include", "trcKernelPort.h"
+    PROJECT_ROOT, "firmware", "TraceRecorder", "kernelports",
+    "FreeRTOS", "include", "trcKernelPort.h"
 )
 
 
 def load_event_names(header_path):
+    # lit trcKernelPort.h et construit un dict {code: nom_event}
+    # a partir des lignes #define PSF_EVENT_XXX 0xYY
+
     names = {}
     pattern = re.compile(r"#define\s+PSF_EVENT_(\w+)\s+(0x[0-9A-Fa-f]+)")
     with open(header_path, "r") as f:
@@ -72,50 +81,71 @@ def load_event_names(header_path):
                 names[int(value, 16)] = name
     return names
 
+
 def get_param_count(event_id):
+    # les 4 bits du haut de event_id = nombre de parametres
     return (event_id >> 12) & 0xF
 
+
 def get_base_event_id(event_id):
+    # les 12 bits du bas de event_id = le vrai type d'event
     return event_id & 0x0FFF
 
+
 def ts_to_ms(raw_ts):
+    # convertit le timestamp brut en millisecondes
     return (raw_ts * HWTC_DIVISOR) / CPU_CLOCK_HZ * 1000
+
 
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else "trace.bin"
     out_path = sys.argv[2] if len(sys.argv) > 2 else "trace_events.csv"
 
+    # charge la liste des types d'events une seule fois
     event_names = load_event_names(KERNEL_PORT_HEADER)
     print(f"Loaded {len(event_names)} event type names from {KERNEL_PORT_HEADER}")
 
+    # lit tout le fichier binair
     with open(path, "rb") as f:
         data = f.read()
 
-    offset = HEADER_SIZE
+    # charge la table des noms de taches une seule fois
     handle_to_name = load_entry_table_names(data)
     print(f"Loaded {len(handle_to_name)} names from the entry table: {list(handle_to_name.values())}")
-    rows = []
 
+    rows = []
+    offset = HEADER_SIZE  # position de lecture, avance a chaque event
+
+    # lit un event a la fois jusqu'a la fin du fichier
     while offset + 8 <= len(data):
+        # lit les 8 octets de base de tout event: id + count + timestamp
         event_id, event_count, ts = struct.unpack_from("<HHI", data, offset)
+
         param_count = get_param_count(event_id)
         base_id = get_base_event_id(event_id)
+
+        # taille reelle de cet event: 8 octets + 4 par parametre
         event_size = 8 + (param_count * 4)
 
+        # si l'event depasse la fin du fichier, on arrete (evite crash)
         if offset + event_size > len(data):
             break
 
+        # nom lisible de l'even
         event_name = event_names.get(base_id, hex(base_id))
         ms = round(ts_to_ms(ts), 3)
 
+        # si l'event a un parametre, souvent c'est un handle de tache
+        # on essaie de le resoudre en vrai nom. certains events (delay)
+        # ont un parametre qui est pas un handle, dans ce cas task_name
+        # reste juste vide, pas d'erreur
         if param_count >= 1:
-            # first param is usually a task/object handle -- try to resolve it
             handle = struct.unpack_from("<I", data, offset + 8)[0]
             task_name = handle_to_name.get(handle, "")
         else:
             task_name = ""
 
-
+        # etat simplifie si connu pour ce type d'event
         task_state = TASK_STATE_EVENTS.get(base_id, "")
 
         rows.append({
@@ -126,11 +156,12 @@ def main():
             "timestamp_ms": ms,
             "param_count": param_count,
             "task_name": task_name,
-	    "task_state": task_state,
+            "task_state": task_state,
         })
 
-        offset += event_size
+        offset += event_size  # passe a l'event suivant
 
+    # ecrit tous les events dans le csv final
     with open(out_path, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
@@ -139,6 +170,7 @@ def main():
     print(f"Parsed {len(rows)} events.")
     print(f"Resolved {len(handle_to_name)} task/object names: {list(handle_to_name.values())}")
     print(f"Written to: {out_path}")
+
 
 if __name__ == "__main__":
     main()
