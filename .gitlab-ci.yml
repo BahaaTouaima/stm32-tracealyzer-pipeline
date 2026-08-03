@@ -1,16 +1,34 @@
 stages:
   - test
 
-
 image: ubuntu:22.04
 
 build_and_trace:
   stage: test
+  cache:
+    key: apt-cache-$CI_COMMIT_REF_SLUG
+    paths:
+      - .apt-cache/
   before_script:
-    - apt-get update && apt-get install -y build-essential cmake gcc-arm-none-eabi
+    - mkdir -p .apt-cache
+    - apt-get -o dir::cache::archives=".apt-cache" update
+    - apt-get -o dir::cache::archives=".apt-cache" install -y build-essential cmake gcc-arm-none-eabi qemu-system-arm gdb-multiarch cppcheck
   script:
     - mkdir -p firmware/build/gcc/output
     - mkdir -p build
     - cd build
     - cmake ..
     - cmake --build .
+    - cd ..
+    - bash ci/capture_trace.sh
+    - python3 ci/parse_events.py ci/trace.bin ci/trace_events.csv
+    - cppcheck --enable=warning,style,performance
+      --suppress=missingIncludeSystem
+      -I firmware/config -I firmware/CMSIS
+      firmware/main.c firmware/main_blinky.c firmware/build/gcc/startup_gcc.c
+      firmware/build/gcc/RegTest.c firmware/build/gcc/timer_handlers_stub.c
+      --output-file=cppcheck-results.txt
+  artifacts:
+    paths:
+      - ci/trace_events.csv
+      - cppcheck-results.txt
