@@ -246,7 +246,7 @@ static void prvQueueReceiveTask( void * pvParameters )
             printf( "Message received from software timer successfully\r\n" );
 
             xTracePrint(xUserEventLogChannel,
-            		"Message received from software timer");
+            		"Message received from software timer ");
         }
         else
         {
