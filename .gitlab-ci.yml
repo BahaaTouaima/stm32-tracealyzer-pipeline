@@ -1,3 +1,7 @@
+stages:
+  - test
+
+
 image: ubuntu:22.04
 
 build_and_trace:
