@@ -1,9 +1,7 @@
 name: CI Pipeline
-
 on:
   push:
     branches: [ main ]
-
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -11,8 +9,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache build tools
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-buildtools-${{ runner.os }}
+
       - name: Install build tools
         run: sudo apt-get update && sudo apt-get install -y build-essential cmake gcc-arm-none-eabi
+
       - name: Build firmware
         run: |
           mkdir -p firmware/build/gcc/output
@@ -21,31 +26,36 @@ jobs:
           cmake ..
           cmake --build .
 
-
-
+      - name: Cache QEMU and GDB
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-qemu-gdb-${{ runner.os }}
 
       - name: Install QEMU and GDB
         run: sudo apt-get update && sudo apt-get install -y qemu-system-arm gdb-multiarch
+
       - name: Capture and parse trace
         run: |
           bash ci/capture_trace.sh
           python3 ci/parse_events.py ci/trace.bin ci/trace_events.csv
+
       - name: Upload trace results
         uses: actions/upload-artifact@v4
         with:
           name: trace-events
           path: ci/trace_events.csv
 
-
-
-
       - name: Log pipeline run
         run: |
           echo "Pipeline run triggered at $(date '+%Y-%m-%d %H:%M:%S')"
           echo "Commit: ${{ github.sha }}"
 
-
-
+      - name: Cache cppcheck
+        uses: actions/cache@v4
+        with:
+          path: /var/cache/apt/archives
+          key: apt-cppcheck-${{ runner.os }}
 
       - name: Install cppcheck
         run: sudo apt-get update && sudo apt-get install -y cppcheck
@@ -63,4 +73,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cppcheck-results
-          path: cppcheck-results.txt     
+          path: cppcheck-results.txt
