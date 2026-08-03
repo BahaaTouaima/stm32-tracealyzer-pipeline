@@ -102,7 +102,7 @@ static QueueHandle_t xQueue = NULL;
 
 /* A software timer that is started from the tick hook. */
 static TimerHandle_t xTimer = NULL;
-
+ 
 /*-----------------------------------------------------------*/
 
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
@@ -243,7 +243,7 @@ static void prvQueueReceiveTask( void * pvParameters )
         }
         else if( ulReceivedValue == mainVALUE_SENT_FROM_TIMER )
         {
-            printf( "Message received from software timer\r\n" );
+            printf( "Message received from software timer successfully\r\n" );
 
             xTracePrint(xUserEventLogChannel,
             		"Message received from software timer");
