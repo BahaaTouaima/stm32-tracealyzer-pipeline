@@ -54,6 +54,11 @@
  * When data is received, the task checks the value of the data, then outputs a
  * message to indicate if the data came from the queue send task or the queue
  * send software timer.
+ *
+ * The Stress Load Task (E5-01):
+ * Added for Sprint 3 load testing. Runs a CPU-heavy loop at a higher
+ * priority than the other two tasks, so we can observe how the scheduler
+ * handles competing priorities under load.
  */
 
 /* Standard includes. */
@@ -68,6 +73,7 @@
 /* Priorities at which the tasks are created. */
 #define mainQUEUE_RECEIVE_TASK_PRIORITY    ( tskIDLE_PRIORITY + 2 )
 #define mainQUEUE_SEND_TASK_PRIORITY       ( tskIDLE_PRIORITY + 1 )
+#define mainSTRESS_TASK_PRIORITY           ( tskIDLE_PRIORITY + 3 )
 
 /* The rate at which data is sent to the queue.  The times are converted from
  * milliseconds to ticks using the pdMS_TO_TICKS() macro. */
@@ -89,6 +95,7 @@
  */
 static void prvQueueReceiveTask( void * pvParameters );
 static void prvQueueSendTask( void * pvParameters );
+static void prvStressLoadTask( void * pvParameters );
 
 /*
  * The callback function executed when the software timer expires.
@@ -128,6 +135,9 @@ void main_blinky( void )
                      NULL );                          /* The task handle is not required, so NULL is passed. */
 
         xTaskCreate( prvQueueSendTask, "TX", configMINIMAL_STACK_SIZE, NULL, mainQUEUE_SEND_TASK_PRIORITY, NULL );
+
+        /* E5-01: stress load task, higher priority, CPU-heavy loop. */
+        xTaskCreate( prvStressLoadTask, "StressLoad", configMINIMAL_STACK_SIZE, NULL, mainSTRESS_TASK_PRIORITY, NULL );
 
         /* Create the software timer, but don't start it yet. */
         xTimer = xTimerCreate( "Timer",                     /* The text name assigned to the software timer - for debug only as it is not used by the kernel. */
@@ -258,4 +268,25 @@ static void prvQueueReceiveTask( void * pvParameters )
 }
 /*-----------------------------------------------------------*/
 
+static void prvStressLoadTask( void * pvParameters )
+{
+    volatile uint32_t counter;
 
+    /* Prevent the compiler warning about the unused parameter. */
+    ( void ) pvParameters;
+
+    for( ;; )
+    {
+        /* CPU-heavy loop: consumes CPU time for a measurable duration.
+         * This is E5-01's load simulation -- a task that actually uses
+         * the CPU, not one that just sleeps. */
+        for( counter = 0; counter < 500000; counter++ )
+        {
+        }
+
+        /* Short delay so the task stays periodic and observable in the
+         * trace, instead of running forever with no visible pattern. */
+        vTaskDelay( pdMS_TO_TICKS( 50 ) );
+    }
+}
+/*-----------------------------------------------------------*/
