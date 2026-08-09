@@ -31,10 +31,11 @@ build_and_trace:
 
 
     - python3 ci/cpu_stats.py ci/trace_events.csv ci/cpu_utilization.csv
-    - ci/cpu_flags.csv
+    - python3 ci/cpu_flag.py ci/cpu_utilization.csv ci/cpu_flags.csv
 
   artifacts:
     paths:
       - ci/trace_events.csv
       - cppcheck-results.txt
       - ci/cpu_utilization.csv
+      - ci/cpu_flags.csv

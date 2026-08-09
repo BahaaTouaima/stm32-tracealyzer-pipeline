@@ -8,3 +8,8 @@ cppcheck-results.txt
 ci/trace.bin
 ci/qemu_output.log
 ci/trace_events.csv
+ci/cpu_flags.csv
+ci/cpu_utilization.csv
+
+ci/cpu_flags.csv
+ci/cpu_utilization.csv
