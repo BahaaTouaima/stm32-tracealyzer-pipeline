@@ -16,7 +16,7 @@ QEMU_LOG="$PROJECT_ROOT/ci/qemu_output.log"
 cd "$OUTPUT_DIR" || exit 1
 
 echo "[1] Starting QEMU in the background..."
-qemu-system-arm -M olimex-stm32-h405 -kernel $BINARY -nographic -monitor none -s  > "$QEMU_LOG" 2>&1 &
+qemu-system-arm -M netduinoplus2 -kernel $BINARY -nographic -monitor none -s  > "$QEMU_LOG" 2>&1 &
 QEMU_PID=$!
 
 echo "[2] waiting for gdb to connect..."
