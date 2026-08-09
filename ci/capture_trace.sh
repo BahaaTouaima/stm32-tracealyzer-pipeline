@@ -31,5 +31,6 @@ gdb-multiarch -batch \
 
 echo "[4] Stopping QEMU..."
 kill $QEMU_PID 2>/dev/null
-
+echo "[QEMU LOG]"
+cat "$QEMU_LOG"
 echo "[5] Done. Trace should be at: $TRACE_FILE"
