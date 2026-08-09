@@ -24,16 +24,21 @@
  *
  */
 
+
+
 #include <stdint.h>
 #include <stdio.h>
+
+#include "FreeRTOS.h"
+#include "trcRecorder.h"
 
 /* FreeRTOS interrupt handlers. */
 extern void vPortSVCHandler( void );
 extern void xPortPendSVHandler( void );
 extern void xPortSysTickHandler( void );
-
+extern void SystemInit( void );
 extern void TIM2_IRQHandler( void );
-
+extern TraceISRHandle_t xTim2ISRHandle;
 /* Exception handlers. */
 static void HardFault_Handler( void ) __attribute__( ( naked ) );
 static void Default_Handler( void ) __attribute__( ( naked ) );
@@ -94,6 +99,7 @@ const uint32_t* isr_vector[] __attribute__((section(".isr_vector"), used)) =
 
 void Reset_Handler( void )
 {
+    SystemInit();
     (void) main();
 }
 
@@ -151,10 +157,42 @@ void Default_Handler( void )
 
 
 
+
+#include "stm32f405xx.h"
+
+volatile uint32_t ulSensorInterruptCount = 0;
+static volatile uint32_t ulBurstCounter = 0;
+
+/* E5-02: fast timer interrupt simulating sensor bursts.
+ * Fires periodically at a baseline rate; every 20th firing switches
+ * to a short high-frequency burst (10x faster) for 5 interrupts,
+ * then returns to baseline. */
 void TIM2_IRQHandler( void )
 {
-    for( ;; );
+    xTraceISRBegin(xTim2ISRHandle);
+
+    TIM2->SR &= ~TIM_SR_UIF;  /* clear the update interrupt flag */
+    ulSensorInterruptCount++;
+    ulBurstCounter++;
+
+    if (ulBurstCounter == 20)
+    {
+        /* enter burst: much shorter period for a handful of ticks */
+        TIM2->ARR = 500;  /* fast burst period */
+    }
+    else if (ulBurstCounter == 25)
+    {
+        /* burst done, return to baseline */
+        TIM2->ARR = 5000;  /* baseline period */
+        ulBurstCounter = 0;
+    }
+
+    xTraceISREnd(0);
 }
+
+
+
+
 
 
 
