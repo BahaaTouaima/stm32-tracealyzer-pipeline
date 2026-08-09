@@ -11,7 +11,7 @@ HEADER_SIZE = 2808
 
 
 # freq du timer + diviseur, pour convertir le timestamp en ms
-CPU_CLOCK_HZ = 25000000
+CPU_CLOCK_HZ = 168000000
 HWTC_DIVISOR = 4
 
 # position + taille de la table des noms de taches dans trace.bin
@@ -98,7 +98,7 @@ def get_base_event_id(event_id):
 
 
 
-SYSTICK_PERIOD = 25000  # verified: configSYSTICK_CLOCK_HZ(25000000)/configTICK_RATE_HZ(1000)
+SYSTICK_PERIOD = 168000  # verified: configSYSTICK_CLOCK_HZ(168000000)/configTICK_RATE_HZ(1000)
 
 def decode_packed_timestamp(raw_ts, prev_tick_low8, wrap_count):
     hwtc_value = raw_ts & 0x00FFFFFF

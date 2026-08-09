@@ -44,7 +44,7 @@
 #define configUSE_PREEMPTION                     1
 #define configUSE_IDLE_HOOK                      0
 #define configUSE_TICK_HOOK                      1
-#define configCPU_CLOCK_HZ                       ( ( unsigned long ) 25000000 )
+#define configCPU_CLOCK_HZ                       ( ( unsigned long ) 168000000 )
 #define configTICK_RATE_HZ                       ( ( TickType_t ) 1000 )
 #define configMINIMAL_STACK_SIZE                 ( ( unsigned short ) 128 )
 #define configTOTAL_HEAP_SIZE                    ( ( size_t ) ( 100 * 1024 ) )
@@ -108,7 +108,7 @@
 
 /* !!!! configMAX_SYSCALL_INTERRUPT_PRIORITY must not be set to zero !!!!
  * See http://www.FreeRTOS.org/RTOS-Cortex-M3-M4.html. */
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY             ( 4 )
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY             ( 5 << (8 - 4) )
 
 /* Use the Cortex-M3 optimised task selection rather than the generic C code
  * version. */

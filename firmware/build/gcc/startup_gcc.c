@@ -31,8 +31,8 @@
 extern void vPortSVCHandler( void );
 extern void xPortPendSVHandler( void );
 extern void xPortSysTickHandler( void );
-extern void TIMER0_Handler( void );
-extern void TIMER1_Handler( void );
+
+extern void TIM2_IRQHandler( void );
 
 /* Exception handlers. */
 static void HardFault_Handler( void ) __attribute__( ( naked ) );
@@ -61,20 +61,35 @@ const uint32_t* isr_vector[] __attribute__((section(".isr_vector"), used)) =
     0, // reserved   -3
     ( uint32_t * ) &xPortPendSVHandler, // PendSV handler       -2
     ( uint32_t * ) &xPortSysTickHandler,// SysTick_Handler      -1
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    ( uint32_t * ) TIMER0_Handler,     // Timer 0
-    ( uint32_t * ) TIMER1_Handler,     // Timer 1
-    0,
-    0,
-    0,
-    0, // Ethernet   13
+   0, // IRQ0  WWDG
+    0, // IRQ1  PVD
+    0, // IRQ2  TAMP_STAMP
+    0, // IRQ3  RTC_WKUP
+    0, // IRQ4  FLASH
+    0, // IRQ5  RCC
+    0, // IRQ6  EXTI0
+    0, // IRQ7  EXTI1
+    0, // IRQ8  EXTI2
+    0, // IRQ9  EXTI3
+    0, // IRQ10 EXTI4
+    0, // IRQ11 DMA1_Stream0
+    0, // IRQ12 DMA1_Stream1
+    0, // IRQ13 DMA1_Stream2
+    0, // IRQ14 DMA1_Stream3
+    0, // IRQ15 DMA1_Stream4
+    0, // IRQ16 DMA1_Stream5
+    0, // IRQ17 DMA1_Stream6
+    0, // IRQ18 ADC
+    0, // IRQ19 CAN1_TX
+    0, // IRQ20 CAN1_RX0
+    0, // IRQ21 CAN1_RX1
+    0, // IRQ22 CAN1_SCE
+    0, // IRQ23 EXTI9_5
+    0, // IRQ24 TIM1_BRK_TIM9
+    0, // IRQ25 TIM1_UP_TIM10
+    0, // IRQ26 TIM1_TRG_COM_TIM11
+    0, // IRQ27 TIM1_CC
+    ( uint32_t * ) TIM2_IRQHandler,    // IRQ28 TIM2
 };
 
 void Reset_Handler( void )
@@ -130,6 +145,23 @@ void Default_Handler( void )
         " .ltorg                                 \n"
     );
 }
+
+
+
+
+
+
+void TIM2_IRQHandler( void )
+{
+    for( ;; );
+}
+
+
+
+
+
+
+
 
 void HardFault_Handler( void )
 {

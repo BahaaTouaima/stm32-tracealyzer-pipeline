@@ -24,11 +24,17 @@
  *
  */
 
+
+
 MEMORY
 {
-    FLASH (xr) : ORIGIN = 0x00000000, LENGTH = 4M /* to 0x00003FFF = 0x007FFFFF*/
-    RAM (rw)  : ORIGIN = 0x20000000, LENGTH = 4M /* to 0x21FFFFFF = 0xFFFFFF */
+    FLASH (xr) : ORIGIN = 0x08000000, LENGTH = 1024K
+    RAM (rw)  : ORIGIN = 0x20000000, LENGTH = 128K
 }
+
+
+
+
 ENTRY(Reset_Handler)
 
 _Min_Heap_Size = 0x8 ;        /* Not used as building heap_4.c */

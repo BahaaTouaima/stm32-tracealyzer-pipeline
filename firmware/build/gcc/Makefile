@@ -18,6 +18,7 @@ CFLAGS += -I$(TRACE_RECORDER_DIR)/streamports/RingBuffer/config
 VPATH += $(TRACE_RECORDER_DIR)
 VPATH += $(TRACE_RECORDER_DIR)/kernelports/FreeRTOS
 VPATH += $(TRACE_RECORDER_DIR)/streamports/RingBuffer
+VPATH += ../../CMSIS
 
 
 
@@ -30,14 +31,16 @@ MAKE = make
 ifeq ($(PICOLIBC), 1)
     CFLAGS += --specs=picolibc.specs -DPICOLIBC_INTEGER_PRINTF_SCANF
 endif
-CFLAGS += -mthumb -mcpu=cortex-m3 -ffreestanding
+CFLAGS += -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffreestanding
+CFLAGS += -DSTM32F405xx
+
 CFLAGS += -g3 -Os -ffunction-sections -fdata-sections
 #CFLAGS += -flto
 CFLAGS += -Wall -Wextra -Wshadow -Wno-unused-value
 CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT $@
 CFLAGS += $(INCLUDE_DIRS)
 
-LDFLAGS = -T ./mps2_m3.ld
+LDFLAGS = -T ./stm32f405.ld
 LDFLAGS += -Xlinker -Map=$(OUTPUT_DIR)/RTOSDemo.map
 LDFLAGS += -Xlinker --gc-sections
 #LDFLAGS += -Xlinker --print-gc-sections
@@ -49,7 +52,7 @@ endif
 # Kernel build.
 #
 KERNEL_DIR = $(FREERTOS_ROOT)/Source
-KERNEL_PORT_DIR += $(KERNEL_DIR)/portable/GCC/ARM_CM3
+KERNEL_PORT_DIR += $(KERNEL_DIR)/portable/GCC/ARM_CM4F
 INCLUDE_DIRS += -I$(KERNEL_DIR)/include \
 				-I$(KERNEL_PORT_DIR)
 VPATH += $(KERNEL_DIR) $(KERNEL_PORT_DIR) $(KERNEL_DIR)/portable/MemMang
@@ -60,7 +63,7 @@ SOURCE_FILES += $(KERNEL_DIR)/timers.c
 SOURCE_FILES += $(KERNEL_DIR)/event_groups.c
 SOURCE_FILES += $(KERNEL_DIR)/stream_buffer.c
 SOURCE_FILES += $(KERNEL_DIR)/portable/MemMang/heap_4.c
-SOURCE_FILES += $(KERNEL_DIR)/portable/GCC/ARM_CM3/port.c
+SOURCE_FILES += $(KERNEL_DIR)/portable/GCC/ARM_CM4F/port.c
 
 #
 # Common demo files for the "full" build, as opposed to the "blinky" build -
@@ -82,6 +85,7 @@ SOURCE_FILES += (DEMO_PROJECT)/main.c
 SOURCE_FILES += (DEMO_PROJECT)/main_blinky.c
 
 SOURCE_FILES += ./startup_gcc.c
+SOURCE_FILES += ../../CMSIS/system_stm32f4xx.c
 SOURCE_FILES += ./RegTest.c
 SOURCE_FILES += ./timer_handlers_stub.c
 # Lightweight print formatting to use in place of the heavier GCC equivalent.
@@ -117,7 +121,7 @@ all: $(IMAGE)
 $(OUTPUT_DIR)/%.o : %.c $(OUTPUT_DIR)/%.d Makefile
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(IMAGE): ./mps2_m3.ld $(OBJS_OUTPUT) Makefile
+$(IMAGE): ./stm32f405.ld $(OBJS_OUTPUT) Makefile
 	@echo ""
 	@echo ""
 	@echo "--- Final linking ---"
