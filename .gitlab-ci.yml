@@ -20,8 +20,6 @@ build_and_trace:
     - cmake ..
     - cmake --build .
     - cd ..
-    - qemu-system-arm --version
-    - qemu-system-arm -M help | grep -i olimex
     - bash ci/capture_trace.sh
     - python3 ci/parse_events.py ci/trace.bin ci/trace_events.csv
     - cppcheck --enable=warning,style,performance
