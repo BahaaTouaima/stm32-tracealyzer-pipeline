@@ -28,7 +28,13 @@ build_and_trace:
       firmware/main.c firmware/main_blinky.c firmware/build/gcc/startup_gcc.c
       firmware/build/gcc/RegTest.c firmware/build/gcc/timer_handlers_stub.c
       --output-file=cppcheck-results.txt
+
+
+    - python3 ci/cpu_stats.py ci/trace_events.csv ci/cpu_utilization.csv
+    - ci/cpu_flags.csv
+
   artifacts:
     paths:
       - ci/trace_events.csv
       - cppcheck-results.txt
+      - ci/cpu_utilization.csv

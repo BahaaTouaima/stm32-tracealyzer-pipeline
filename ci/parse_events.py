@@ -92,9 +92,29 @@ def get_base_event_id(event_id):
     return event_id & 0x0FFF
 
 
-def ts_to_ms(raw_ts):
-    # convertit le timestamp brut en millisecondes
-    return (raw_ts * HWTC_DIVISOR) / CPU_CLOCK_HZ * 1000
+
+
+
+
+
+
+SYSTICK_PERIOD = 25000  # verified: configSYSTICK_CLOCK_HZ(25000000)/configTICK_RATE_HZ(1000)
+
+def decode_packed_timestamp(raw_ts, prev_tick_low8, wrap_count):
+    hwtc_value = raw_ts & 0x00FFFFFF
+    tick_low8 = (raw_ts >> 24) & 0xFF
+    if prev_tick_low8 is not None and tick_low8 < prev_tick_low8:
+        wrap_count += 1
+    full_tick_count = wrap_count * 256 + tick_low8
+    fraction = (SYSTICK_PERIOD - hwtc_value) / SYSTICK_PERIOD
+    ms = full_tick_count + fraction
+    return ms, tick_low8, wrap_count
+
+
+
+
+
+
 
 
 def main():
@@ -116,6 +136,9 @@ def main():
     rows = []
     offset = HEADER_SIZE  # position de lecture, avance a chaque event
 
+    prev_tick_low8 = None
+    wrap_count = 0
+
     # lit un event a la fois jusqu'a la fin du fichier
     while offset + 8 <= len(data):
         # lit les 8 octets de base de tout event: id + count + timestamp
@@ -133,7 +156,8 @@ def main():
 
         # nom lisible de l'even
         event_name = event_names.get(base_id, hex(base_id))
-        ms = round(ts_to_ms(ts), 3)
+        ms_raw, prev_tick_low8, wrap_count = decode_packed_timestamp(ts, prev_tick_low8, wrap_count)
+        ms = round(ms_raw, 3)
 
         # si l'event a un parametre, souvent c'est un handle de tache
         # on essaie de le resoudre en vrai nom. certains events (delay)

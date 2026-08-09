@@ -43,6 +43,7 @@ extern "C" {
  */
 #include "CMSDK_CM3.h"
 #define TRC_CFG_HARDWARE_PORT TRC_HARDWARE_PORT_ARM_Cortex_M
+#define TRC_CFG_ARM_CM_USE_SYSTICK
 /**
  * @def TRC_CFG_SCHEDULING_ONLY
  * @brief Macro which should be defined as an integer value.
