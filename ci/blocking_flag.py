@@ -1,7 +1,12 @@
 import csv
 import sys
 
-def check_blocking_chains(csv_file, max_block_ms=100.0, out_path="ci/blocking_chains.csv"):
+def check_blocking_chains(csv_file, max_block_ms=50.0, out_path="ci/blocking_chains.csv"):
+
+    #50ms threshold matches ResClaimant's own mutex wait timeout
+    # (pdMS_TO_TICKS(50) in main_blinky.c) -- blocking longer than this
+    # means ResClaimant would actually fail to acquire the mutex in time.*/
+
     events = []
     with open(csv_file, mode='r') as f:
         reader = csv.DictReader(f)
