@@ -1,7 +1,7 @@
 import csv
 import sys
 
-def check_isr_overruns(csv_file, max_duration_ms=1.0):
+def check_isr_overruns(csv_file, max_duration_ms=1.0, out_path="ci/isr_overruns.csv"):
     events = []
     with open(csv_file, mode='r') as f:
         reader = csv.DictReader(f)
@@ -13,21 +13,35 @@ def check_isr_overruns(csv_file, max_duration_ms=1.0):
                 continue
 
     overruns_found = 0
+    overrun_records = []
     print(f"Analyzing {len(events)} events for ISR overruns (Threshold: {max_duration_ms} ms)...")
 
-    # Find TIM2_Sensor events and compute duration to the subsequent event
+    # Find TIM2_Sensor ISR_BEGIN events and compute duration to the matching ISR_END
     for i in range(len(events) - 1):
         curr = events[i]
         if curr.get('event_name') == 'ISR_BEGIN' and 'TIM2_Sensor' in curr.get('task_name', ''):
             start_time = curr['timestamp_ms']
-            next_time = events[i + 1]['timestamp_ms']
-            duration = next_time - start_time
+            nxt = events[i + 1]
 
+           
+            next_time = nxt['timestamp_ms']
+            duration = next_time - start_time
+            print(f"   (ISR ends at next event: '{nxt.get('event_name')}' "
+                  f"for '{nxt.get('task_name', '?')}')")
             print(f"-> TIM2_Sensor ISR at t={start_time:.3f} ms | Duration: {duration:.3f} ms")
 
             if duration > max_duration_ms:
                 print(f"   [!] OVERRUN WARNING: Duration {duration:.3f} ms exceeds threshold {max_duration_ms} ms!")
                 overruns_found += 1
+                overrun_records.append((start_time, duration))
+
+    with open(out_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["isr_name", "start_time_ms", "duration_ms", "severity"])
+        for start_time, duration in overrun_records:
+            severity = "critical" if duration > max_duration_ms * 3 else "high" if duration > max_duration_ms * 1.5 else "medium"
+            writer.writerow(["TIM2_Sensor", f"{start_time:.3f}", f"{duration:.3f}", severity])
+    print(f"Written to: {out_path}")
 
     if overruns_found > 0:
         print(f"\n[FAIL] Found {overruns_found} ISR overrun(s).")

@@ -165,8 +165,8 @@ static volatile uint32_t ulBurstCounter = 0;
 
 /* E5-02: fast timer interrupt simulating sensor bursts.
  * Fires periodically at a baseline rate; every 20th firing switches
- * to a short high-frequency burst (10x faster) for 5 interrupts,
- * then returns to baseline. */
+ * to a short high-frequency burst for 5 interrupts, then returns to
+ * baseline. Observed timing in QEMU is faster than real hardware */
 void TIM2_IRQHandler( void )
 {
     xTraceISRBegin(xTim2ISRHandle);

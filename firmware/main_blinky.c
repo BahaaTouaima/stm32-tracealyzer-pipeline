@@ -74,7 +74,7 @@
 #include "task.h"
 #include "timers.h"
 #include "queue.h"
-
+#include "semphr.h"
 /* Device includes (needed for RCC/TIM2/NVIC access in prvSetupTim2Interrupt). */
 #include "stm32f4xx.h"
 
@@ -104,7 +104,8 @@
 static void prvQueueReceiveTask( void * pvParameters );
 static void prvQueueSendTask( void * pvParameters );
 static void prvStressLoadTask( void * pvParameters );
-
+static void prvResourceHolderTask( void * pvParameters );
+static void prvResourceClaimantTask( void * pvParameters );
 /*
  * E5-02: configures TIM2 as a hardware interrupt source simulating a
  * sensor firing at a baseline rate, with periodic bursts.
@@ -126,7 +127,8 @@ static TimerHandle_t xTimer = NULL;
 /* E5-02: TIM2 ISR trace handle, registered once at setup. */
 TraceISRHandle_t xTim2ISRHandle;
 /*-----------------------------------------------------------*/
-
+/* E5-03: Mutex for resource contention */
+static SemaphoreHandle_t xContentionMutex = NULL;
 /*** SEE THE COMMENTS AT THE TOP OF THIS FILE ***/
 void main_blinky( void )
 {
@@ -157,6 +159,21 @@ void main_blinky( void )
         /* E5-01: stress load task, higher priority, CPU-heavy loop. */
         xTaskCreate( prvStressLoadTask, "StressLoad", configMINIMAL_STACK_SIZE, NULL, mainSTRESS_TASK_PRIORITY, NULL );
 
+
+       /* * E5-03: Create a mutex for resource contention testing */
+        xContentionMutex = xSemaphoreCreateMutex();
+        if( xContentionMutex != NULL )
+        {
+            vTraceSetMutexName(xContentionMutex, "ContentionMutex");
+        }
+
+        /* Create the resource contention tasks */
+        xTaskCreate( prvResourceHolderTask, "ResHolder", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
+        xTaskCreate( prvResourceClaimantTask, "ResClaimant", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL );
+
+
+
+
         /* Create the software timer, but don't start it yet. */
         xTimer = xTimerCreate( "Timer",                     /* The text name assigned to the software timer - for debug only as it is not used by the kernel. */
                                xTimerPeriod,                /* The period of the software timer in ticks. */
@@ -185,7 +202,9 @@ void main_blinky( void )
 static void prvSetupTim2Interrupt( void )
 {
     RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;   /* enable TIM2 clock */
-
+/* Note: these values target ~500ms on real STM32F405 hardware.
+     * In this QEMU setup, actual observed period is ~44.8ms (QEMU
+     * timer emulation runs faster than real hardware would). */
     TIM2->PSC = 8399;
     TIM2->ARR = 5000;
     TIM2->EGR = TIM_EGR_UG;      /* Load PSC/ARR shadow registers and reset CNT to 0 */
@@ -323,6 +342,47 @@ static void prvStressLoadTask( void * pvParameters )
         /* Short delay so the task stays periodic and observable in the
          * trace, instead of running forever with no visible pattern. */
         vTaskDelay( pdMS_TO_TICKS( 50 ) );
+    }
+}
+
+
+/*-----------------------------------------------------------*/
+static void prvResourceHolderTask( void * pvParameters )
+{
+    ( void ) pvParameters;
+
+    for( ;; )
+    {
+        /* Low priority task takes the mutex and holds it for a while */
+        if( xSemaphoreTake( xContentionMutex, portMAX_DELAY ) == pdTRUE )
+        {
+            // Hold the resource for 100ms simulating work
+            vTaskDelay( pdMS_TO_TICKS( 100 ) );
+            xSemaphoreGive( xContentionMutex );
+        }
+        // Rest before trying again
+        vTaskDelay( pdMS_TO_TICKS( 300 ) );
+    }
+}
+
+
+
+/*-----------------------------------------------------------*/
+
+static void prvResourceClaimantTask( void * pvParameters )
+{
+    ( void ) pvParameters;
+
+    for( ;; )
+    {
+        /* High priority task frequently tries to take the same mutex, forcing blocking */
+        vTaskDelay( pdMS_TO_TICKS( 150 ) );
+        
+        if( xSemaphoreTake( xContentionMutex, pdMS_TO_TICKS( 50 ) ) == pdTRUE )
+        {
+            // Successfully acquired after blocking/waiting
+            xSemaphoreGive( xContentionMutex );
+        }
     }
 }
 /*-----------------------------------------------------------*/
