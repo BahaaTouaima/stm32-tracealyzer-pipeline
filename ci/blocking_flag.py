@@ -1,7 +1,11 @@
 import csv
 import sys
+import os
 
-def check_blocking_chains(csv_file, max_block_ms=50.0, out_path="ci/blocking_chains.csv"):
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+def check_blocking_chains(csv_file, max_block_ms=50.0, out_path=None):
+    if out_path is None:
+        out_path = os.path.join(SCRIPT_DIR, "blocking_chains.csv")
 
     #50ms threshold matches ResClaimant's own mutex wait timeout
     # (pdMS_TO_TICKS(50) in main_blinky.c) -- blocking longer than this
