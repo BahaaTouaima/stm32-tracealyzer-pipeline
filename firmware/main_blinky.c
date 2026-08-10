@@ -82,11 +82,16 @@
 #define mainQUEUE_RECEIVE_TASK_PRIORITY    ( tskIDLE_PRIORITY + 2 )
 #define mainQUEUE_SEND_TASK_PRIORITY       ( tskIDLE_PRIORITY + 1 )
 #define mainSTRESS_TASK_PRIORITY           ( tskIDLE_PRIORITY + 3 )
+#define mainDEADLINE_TASK_PRIORITY         ( tskIDLE_PRIORITY + 2 )
 
 /* The rate at which data is sent to the queue.  The times are converted from
  * milliseconds to ticks using the pdMS_TO_TICKS() macro. */
 #define mainTASK_SEND_FREQUENCY_MS         pdMS_TO_TICKS( 200UL )
 #define mainTIMER_SEND_FREQUENCY_MS        pdMS_TO_TICKS( 2000UL )
+
+/* Periodic deadline task timing (in ticks / ms). */
+#define mainDEADLINE_TASK_PERIOD_MS        pdMS_TO_TICKS( 100UL )
+#define mainDEADLINE_TASK_EXPECTED_MS      ( 20UL )
 
 /* The number of items the queue can hold at once. */
 #define mainQUEUE_LENGTH                   ( 2 )
@@ -106,6 +111,7 @@ static void prvQueueSendTask( void * pvParameters );
 static void prvStressLoadTask( void * pvParameters );
 static void prvResourceHolderTask( void * pvParameters );
 static void prvResourceClaimantTask( void * pvParameters );
+static void prvDeadlineTask( void * pvParameters );
 /*
  * E5-02: configures TIM2 as a hardware interrupt source simulating a
  * sensor firing at a baseline rate, with periodic bursts.
@@ -170,6 +176,9 @@ void main_blinky( void )
         /* Create the resource contention tasks */
         xTaskCreate( prvResourceHolderTask, "ResHolder", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL );
         xTaskCreate( prvResourceClaimantTask, "ResClaimant", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, NULL );
+
+        /* Periodic task with a hard deadline, running alongside the load scenarios. */
+        xTaskCreate( prvDeadlineTask, "Deadline", configMINIMAL_STACK_SIZE, NULL, mainDEADLINE_TASK_PRIORITY, NULL );
 
 
 
@@ -383,6 +392,43 @@ static void prvResourceClaimantTask( void * pvParameters )
             // Successfully acquired after blocking/waiting
             xSemaphoreGive( xContentionMutex );
         }
+    }
+}
+/*-----------------------------------------------------------*/
+
+static void prvDeadlineTask( void * pvParameters )
+{
+    TickType_t xNextWakeTime;
+    TickType_t xStartTick;
+    TickType_t xElapsedTicks;
+    volatile uint32_t counter;
+    TraceStringHandle_t xDeadlineLogChannel;
+
+    ( void ) pvParameters;
+
+    xTraceStringRegister( "DeadlineLog", &xDeadlineLogChannel );
+
+    xNextWakeTime = xTaskGetTickCount();
+
+    for( ;; )
+    {
+        vTaskDelayUntil( &xNextWakeTime, mainDEADLINE_TASK_PERIOD_MS );
+
+        xStartTick = xTaskGetTickCount();
+
+        /* Small bounded workload: short enough to finish inside the
+         * expected budget if not preempted, so contention with the
+         * higher-priority stress/claimant tasks is what causes misses. */
+        for( counter = 0; counter < 50000; counter++ )
+        {
+        }
+
+        xElapsedTicks = xTaskGetTickCount() - xStartTick;
+
+        xTracePrintF( xDeadlineLogChannel,
+                      "Deadline task: expected=%ums actual=%ums",
+                      mainDEADLINE_TASK_EXPECTED_MS,
+                      ( uint32_t ) ( xElapsedTicks * portTICK_PERIOD_MS ) );
     }
 }
 /*-----------------------------------------------------------*/
