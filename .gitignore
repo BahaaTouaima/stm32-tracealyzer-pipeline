@@ -14,3 +14,4 @@ ci/cpu_utilization.csv
 ci/cpu_flags.csv
 ci/cpu_utilization.csv
 ci/isr_overruns.csv
+ci/blocking_chains.csv
