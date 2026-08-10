@@ -26,6 +26,14 @@ def check_isr_overruns(csv_file, max_duration_ms=1.0, out_path="ci/isr_overruns.
            
             next_time = nxt['timestamp_ms']
             duration = next_time - start_time
+
+
+            # Guard against negative duration anomalies from interleaved events
+            if duration < 0:
+                print(f"    [!] Warning: Negative duration detected ({duration:.3f} ms) at t={start_time:.3f} ms. Skipping anomaly.")
+                continue
+
+
             print(f"   (ISR ends at next event: '{nxt.get('event_name')}' "
                   f"for '{nxt.get('task_name', '?')}')")
             print(f"-> TIM2_Sensor ISR at t={start_time:.3f} ms | Duration: {duration:.3f} ms")
