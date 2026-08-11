@@ -35,6 +35,7 @@ build_and_trace:
     - python3 ci/isr_flag.py ci/trace_events.csv
     - python3 ci/blocking_flag.py ci/trace_events.csv
     - python3 ci/deadline_flag.py ci/trace_events.csv
+    - python3 ci/stack_flag.py ci/trace_events.csv
 
   artifacts:
     paths:
@@ -45,3 +46,4 @@ build_and_trace:
       - ci/isr_overruns.csv
       - ci/blocking_chains.csv
       - ci/deadline_misses.csv
+      - ci/stack_flags.csv

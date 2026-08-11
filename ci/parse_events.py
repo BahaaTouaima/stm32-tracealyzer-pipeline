@@ -169,6 +169,12 @@ def main():
         else:
             task_name = ""
 
+        # second raw parameter, when present (e.g. UNUSED_STACK's watermark value, in words)
+        if param_count >= 2:
+            param2_raw = struct.unpack_from("<I", data, offset + 12)[0]
+        else:
+            param2_raw = ""
+
         # etat simplifie si connu pour ce type d'event
         task_state = TASK_STATE_EVENTS.get(base_id, "")
 
@@ -181,6 +187,7 @@ def main():
             "param_count": param_count,
             "task_name": task_name,
             "task_state": task_state,
+            "param2_raw": param2_raw,
         })
 
         offset += event_size  # passe a l'event suivant
