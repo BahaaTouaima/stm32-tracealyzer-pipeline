@@ -83,6 +83,7 @@
 #define mainQUEUE_SEND_TASK_PRIORITY       ( tskIDLE_PRIORITY + 1 )
 #define mainSTRESS_TASK_PRIORITY           ( tskIDLE_PRIORITY + 3 )
 #define mainDEADLINE_TASK_PRIORITY         ( tskIDLE_PRIORITY + 2 )
+#define mainSTACK_TEST_TASK_PRIORITY       ( tskIDLE_PRIORITY + 1 )
 
 /* The rate at which data is sent to the queue.  The times are converted from
  * milliseconds to ticks using the pdMS_TO_TICKS() macro. */
@@ -112,6 +113,7 @@ static void prvStressLoadTask( void * pvParameters );
 static void prvResourceHolderTask( void * pvParameters );
 static void prvResourceClaimantTask( void * pvParameters );
 static void prvDeadlineTask( void * pvParameters );
+static void prvStackTestTask( void * pvParameters );
 /*
  * E5-02: configures TIM2 as a hardware interrupt source simulating a
  * sensor firing at a baseline rate, with periodic bursts.
@@ -179,6 +181,15 @@ void main_blinky( void )
 
         /* Periodic task with a hard deadline, running alongside the load scenarios. */
         xTaskCreate( prvDeadlineTask, "Deadline", configMINIMAL_STACK_SIZE, NULL, mainDEADLINE_TASK_PRIORITY, NULL );
+
+        /* Task with a small stack that consumes most of it, so its low
+         * watermark shows up in the trace for overflow-risk detection. */
+        TaskHandle_t xStackTestTaskHandle = NULL;
+        xTaskCreate( prvStackTestTask, "StackTest", configMINIMAL_STACK_SIZE, NULL, mainSTACK_TEST_TASK_PRIORITY, &xStackTestTaskHandle );
+        if( xStackTestTaskHandle != NULL )
+        {
+            xTraceStackMonitorAdd( xStackTestTaskHandle );
+        }
 
 
 
@@ -429,6 +440,31 @@ static void prvDeadlineTask( void * pvParameters )
                       "Deadline task: expected=%ums actual=%ums",
                       mainDEADLINE_TASK_EXPECTED_MS,
                       ( uint32_t ) ( xElapsedTicks * portTICK_PERIOD_MS ) );
+    }
+}
+/*-----------------------------------------------------------*/
+
+static void prvStackConsumeHelper( void )
+{
+    /* 300 bytes out of a 512-byte stack (configMINIMAL_STACK_SIZE = 128
+     * words). volatile prevents the compiler from optimising this away. */
+    volatile uint8_t pucBuffer[300];
+    uint32_t i;
+
+    for( i = 0; i < sizeof( pucBuffer ); i++ )
+    {
+        pucBuffer[i] = ( uint8_t ) i;
+    }
+}
+
+static void prvStackTestTask( void * pvParameters )
+{
+    ( void ) pvParameters;
+
+    for( ;; )
+    {
+        prvStackConsumeHelper();
+        vTaskDelay( pdMS_TO_TICKS( 200 ) );
     }
 }
 /*-----------------------------------------------------------*/
