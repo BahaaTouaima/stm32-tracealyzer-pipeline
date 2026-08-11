@@ -84,6 +84,7 @@
 #define mainSTRESS_TASK_PRIORITY           ( tskIDLE_PRIORITY + 3 )
 #define mainDEADLINE_TASK_PRIORITY         ( tskIDLE_PRIORITY + 2 )
 #define mainSTACK_TEST_TASK_PRIORITY       ( tskIDLE_PRIORITY + 1 )
+#define mainSKIPPED_TASK_PRIORITY          ( tskIDLE_PRIORITY )
 
 /* The rate at which data is sent to the queue.  The times are converted from
  * milliseconds to ticks using the pdMS_TO_TICKS() macro. */
@@ -114,6 +115,7 @@ static void prvResourceHolderTask( void * pvParameters );
 static void prvResourceClaimantTask( void * pvParameters );
 static void prvDeadlineTask( void * pvParameters );
 static void prvStackTestTask( void * pvParameters );
+static void prvSkippedTask( void * pvParameters );
 /*
  * E5-02: configures TIM2 as a hardware interrupt source simulating a
  * sensor firing at a baseline rate, with periodic bursts.
@@ -190,6 +192,11 @@ void main_blinky( void )
         {
             xTraceStackMonitorAdd( xStackTestTaskHandle );
         }
+
+        /* Lowest-priority task in the system (shares IDLE's level), so
+         * it gets preempted by everything else and can go long stretches
+         * without running when the system is under load. */
+        xTaskCreate( prvSkippedTask, "Skipped", configMINIMAL_STACK_SIZE, NULL, mainSKIPPED_TASK_PRIORITY, NULL );
 
 
 
@@ -465,6 +472,19 @@ static void prvStackTestTask( void * pvParameters )
     {
         prvStackConsumeHelper();
         vTaskDelay( pdMS_TO_TICKS( 200 ) );
+    }
+}
+/*-----------------------------------------------------------*/
+
+static void prvSkippedTask( void * pvParameters )
+{
+    ( void ) pvParameters;
+
+    for( ;; )
+    {
+        vTaskDelay( pdMS_TO_TICKS( 50 ) );
+        /* Deliberately minimal work: this task exists to be starved by
+         * higher-priority tasks, not to do anything meaningful itself. */
     }
 }
 /*-----------------------------------------------------------*/
