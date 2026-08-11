@@ -23,10 +23,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 SEVERITY_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3}
 
-# how far around a finding's timestamp_ms to pull trace events as evidence
 EVIDENCE_WINDOW_MS = 20
 
-# findings with no timestamp_ms (cpu_hog, low_stack) get no evidence lookup
 NO_TIMESTAMP_TYPES = {"cpu_hog", "low_stack"}
 
 RECOMMENDATIONS = {
@@ -63,8 +61,6 @@ def load_findings():
 def load_trace_events():
     path = os.path.join(SCRIPT_DIR, "trace_events.csv")
     rows = read_csv_rows(path)
-    # trace_events.csv is written in the order events occur in trace.bin,
-    # which is monotonically increasing timestamp_ms - safe to binary search.
     timestamps = []
     for row in rows:
         try:
