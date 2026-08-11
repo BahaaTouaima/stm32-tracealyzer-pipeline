@@ -17,3 +17,4 @@ ci/isr_overruns.csv
 ci/blocking_chains.csv
 ci/deadline_misses.csv
 ci/stack_flags.csv
+ci/skip_flags.csv
