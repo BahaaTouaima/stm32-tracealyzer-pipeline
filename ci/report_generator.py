@@ -2,21 +2,20 @@
 """
 ci/report_generator.py
 
-E7-01: Build the final HTML report - summary, task names/timing per issue,
-and trace evidence for each problem.
+E7-01: Build the final Markdown report - summary, task names/timing per
+issue, and trace evidence for each problem.
 
 Input:
   - severity_report.csv  (written by severity_report.py)
   - trace_events.csv     (written by parse_events.py)
 
 Output:
-  - report.html
+  - report.md
 """
 
 import csv
 import os
 import bisect
-import html
 from datetime import datetime
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -101,48 +100,39 @@ def parse_findings(raw_findings):
 
 def render_evidence_table(evidence_rows):
     if not evidence_rows:
-        return "<p class='no-evidence'>No trace evidence available for this finding.</p>"
+        return "_No trace evidence available for this finding._"
 
-    header_cells = "".join(
-        f"<th>{html.escape(h)}</th>"
-        for h in ["timestamp_ms", "event_name", "task_name", "task_state", "param2_raw"]
-    )
-    body_rows = []
+    cols = ["timestamp_ms", "event_name", "task_name", "task_state", "param2_raw"]
+    header = "| " + " | ".join(cols) + " |"
+    separator = "| " + " | ".join("---" for _ in cols) + " |"
+    body_lines = []
     for ev in evidence_rows:
-        cells = "".join(
-            f"<td>{html.escape(str(ev.get(col, '')))}</td>"
-            for col in ["timestamp_ms", "event_name", "task_name", "task_state", "param2_raw"]
-        )
-        body_rows.append(f"<tr>{cells}</tr>")
+        cells = [str(ev.get(col, "")).replace("|", "\\|") for col in cols]
+        body_lines.append("| " + " | ".join(cells) + " |")
 
-    return (
-        "<table class='evidence-table'>"
-        f"<thead><tr>{header_cells}</tr></thead>"
-        f"<tbody>{''.join(body_rows)}</tbody>"
-        "</table>"
-    )
+    return "\n".join([header, separator] + body_lines)
 
 
-def render_finding(finding, evidence_rows):
+def render_finding(index, finding, evidence_rows):
     sev = finding["severity"]
     ts_display = f"{finding['timestamp_ms']}ms" if finding["timestamp_ms"] is not None else "N/A"
     recommendation = RECOMMENDATIONS.get(finding["problem_type"], "Review this finding manually.")
 
-    return f"""
-    <div class="finding finding-{html.escape(sev)}">
-      <div class="finding-header">
-        <span class="badge badge-{html.escape(sev)}">{html.escape(sev.upper())}</span>
-        <span class="problem-type">{html.escape(finding['problem_type'])}</span>
-        <span class="timestamp">t = {html.escape(ts_display)}</span>
-      </div>
-      <p class="description">{html.escape(finding['description'])}</p>
-      <p class="recommendation"><strong>Recommendation:</strong> {html.escape(recommendation)}</p>
-      <details>
-        <summary>Trace evidence (&plusmn;{EVIDENCE_WINDOW_MS}ms)</summary>
-        {render_evidence_table(evidence_rows)}
-      </details>
-    </div>
-    """
+    return f"""### {index}. [{sev.upper()}] {finding['problem_type']} — t = {ts_display}
+
+**Description:** {finding['description']}
+
+**Recommendation:** {recommendation}
+
+<details>
+<summary>Trace evidence (&plusmn;{EVIDENCE_WINDOW_MS}ms)</summary>
+
+{render_evidence_table(evidence_rows)}
+
+</details>
+
+---
+"""
 
 
 def render_summary(findings):
@@ -150,72 +140,36 @@ def render_summary(findings):
     for f in findings:
         counts[f["severity"]] = counts.get(f["severity"], 0) + 1
 
-    badges = "".join(
-        f"<div class='summary-card summary-{sev}'><span class='count'>{counts[sev]}</span>"
-        f"<span class='label'>{sev.capitalize()}</span></div>"
-        for sev in ["critical", "high", "medium", "low"]
-    )
-    return f"<div class='summary-grid'>{badges}</div>"
+    lines = ["| Severity | Count |", "|---|---|"]
+    for sev in ["critical", "high", "medium", "low"]:
+        lines.append(f"| {sev.capitalize()} | {counts[sev]} |")
+    return "\n".join(lines)
 
 
 def render_report(findings, trace_rows, trace_timestamps):
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    findings_html = []
-    for finding in findings:
+    findings_lines = []
+    for i, finding in enumerate(findings, start=1):
         if finding["problem_type"] in NO_TIMESTAMP_TYPES:
             evidence = []
         else:
             evidence = get_evidence(finding["timestamp_ms"], trace_rows, trace_timestamps)
-        findings_html.append(render_finding(finding, evidence))
+        findings_lines.append(render_finding(i, finding, evidence))
 
-    return f"""<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>STM32 FreeRTOS Stress Test Report</title>
-<style>
-  body {{ font-family: -apple-system, Arial, sans-serif; background:#f5f6f8; color:#1c1e21; margin:0; padding:2rem; }}
-  h1 {{ margin-bottom:0.2rem; }}
-  .meta {{ color:#666; margin-bottom:1.5rem; }}
-  .summary-grid {{ display:flex; gap:1rem; margin-bottom:2rem; }}
-  .summary-card {{ flex:1; padding:1rem; border-radius:8px; text-align:center; color:#fff; }}
-  .summary-card .count {{ display:block; font-size:2rem; font-weight:bold; }}
-  .summary-critical {{ background:#8b0000; }}
-  .summary-high {{ background:#d9534f; }}
-  .summary-medium {{ background:#f0ad4e; }}
-  .summary-low {{ background:#5bc0de; }}
-  .finding {{ background:#fff; border-left:6px solid #ccc; border-radius:6px; padding:1rem 1.2rem; margin-bottom:1rem; box-shadow:0 1px 2px rgba(0,0,0,0.08); }}
-  .finding-critical {{ border-left-color:#8b0000; }}
-  .finding-high {{ border-left-color:#d9534f; }}
-  .finding-medium {{ border-left-color:#f0ad4e; }}
-  .finding-low {{ border-left-color:#5bc0de; }}
-  .finding-header {{ display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem; }}
-  .badge {{ font-size:0.75rem; font-weight:bold; padding:0.2rem 0.5rem; border-radius:4px; color:#fff; }}
-  .badge-critical {{ background:#8b0000; }}
-  .badge-high {{ background:#d9534f; }}
-  .badge-medium {{ background:#f0ad4e; }}
-  .badge-low {{ background:#5bc0de; }}
-  .problem-type {{ font-weight:600; }}
-  .timestamp {{ margin-left:auto; color:#666; font-size:0.9rem; }}
-  .description {{ margin:0.3rem 0; }}
-  .recommendation {{ font-size:0.9rem; color:#333; }}
-  details {{ margin-top:0.5rem; }}
-  summary {{ cursor:pointer; font-size:0.85rem; color:#0645ad; }}
-  .evidence-table {{ width:100%; border-collapse:collapse; margin-top:0.5rem; font-size:0.8rem; }}
-  .evidence-table th, .evidence-table td {{ border:1px solid #ddd; padding:0.3rem 0.5rem; text-align:left; }}
-  .evidence-table th {{ background:#f0f0f0; }}
-  .no-evidence {{ font-size:0.85rem; color:#888; font-style:italic; }}
-</style>
-</head>
-<body>
-  <h1>STM32 FreeRTOS Stress Test &amp; Weakness Report</h1>
-  <p class="meta">Generated {html.escape(generated_at)} &middot; {len(findings)} finding(s)</p>
-  {render_summary(findings)}
-  <h2>Findings</h2>
-  {''.join(findings_html)}
-</body>
-</html>
+    findings_section = "\n".join(findings_lines) if findings_lines else "_No findings._"
+
+    return f"""# STM32 FreeRTOS Stress Test & Weakness Report
+
+_Generated {generated_at} &middot; {len(findings)} finding(s)_
+
+## Summary
+
+{render_summary(findings)}
+
+## Findings
+
+{findings_section}
 """
 
 
@@ -224,11 +178,11 @@ def main():
     findings = parse_findings(raw_findings)
     trace_rows, trace_timestamps = load_trace_events()
 
-    report_html = render_report(findings, trace_rows, trace_timestamps)
+    report_md = render_report(findings, trace_rows, trace_timestamps)
 
-    out_path = os.path.join(SCRIPT_DIR, "report.html")
+    out_path = os.path.join(SCRIPT_DIR, "report.md")
     with open(out_path, "w") as f:
-        f.write(report_html)
+        f.write(report_md)
 
     print(f"Report generated with {len(findings)} finding(s).")
     print(f"Written to: {out_path}")

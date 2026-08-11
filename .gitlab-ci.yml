@@ -51,4 +51,4 @@ build_and_trace:
       - ci/stack_flags.csv
       - ci/skip_flags.csv
       - ci/severity_report.csv
-      - ci/report.html
+      - ci/report.md
