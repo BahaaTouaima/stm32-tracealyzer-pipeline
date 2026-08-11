@@ -37,6 +37,7 @@ build_and_trace:
     - python3 ci/deadline_flag.py ci/trace_events.csv
     - python3 ci/stack_flag.py ci/trace_events.csv
     - python3 ci/skip_flag.py ci/trace_events.csv
+    - python3 ci/severity_report.py
 
   artifacts:
     paths:
@@ -49,3 +50,4 @@ build_and_trace:
       - ci/deadline_misses.csv
       - ci/stack_flags.csv
       - ci/skip_flags.csv
+      - ci/severity_report.csv
