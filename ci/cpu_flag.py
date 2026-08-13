@@ -8,7 +8,7 @@ whose cpu_percent exceeds CPU_THRESHOLD_PERCENT.
 import csv
 import sys
 
-CPU_THRESHOLD_PERCENT = 50.0  # adjust based on your system's expected load
+CPU_THRESHOLD_PERCENT = 50.0  # expected load
 
 
 """def flag_cpu_hogs(csv_path, threshold):

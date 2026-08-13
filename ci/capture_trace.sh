@@ -19,7 +19,7 @@ gdb-multiarch -batch \
   -ex "break xPortSysTickHandler" \
   -ex "ignore 1 5000" \
   -ex "continue" \
-  -ex "dump binary memory $TRACE_FILE &pxStreamPortData->xRingBuffer.xHeaderBuffer (&pxStreamPortData->xRingBuffer.xEventBuffer + 1)" \
+  -ex "dump binary value $TRACE_FILE *RecorderDataPtr" \
   -ex "detach" \
   $BINARY
 
